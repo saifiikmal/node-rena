@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="Yosemite" >
+    <title>Home | Dev Con</title>
+  
+  <!-- core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/font-awesome.min.css" rel="stylesheet">
+    <link href="css/prettyPhoto.css" rel="stylesheet">-->
+    <link href="css/main.css" rel="stylesheet">
+    <link href="css/responsive.css" rel="stylesheet">
+
+    <!--[if lt IE 9]>
+    <script src="js/html5shiv.js"></script>
+    <script src="js/respond.min.js"></script>
+    <![endif]-->       
+
+    </style>
+</head><!--/head-->
+
+<body class="homepage">
+
+    <header id="header" style="position:fixed; top:0; display: block; width: 100%; z-index: 1;">
+        
+
+        <nav class="navbar navbar-inverse" role="banner">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                        <span class="sr-only">Toggle navigation</span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <a class="navbar-brand" style="margin-bottom: 10px;" href="index.html"><img src="images/dev_con_logo.jpg" alt="logo" width="116px"></a>
+                </div>
+                <div class="collapse navbar-collapse navbar-left" style="margin: 0 auto; text-align: center; width: 70%;">
+                    <h2 style="color: #fff; font-weight: 500; font-size: 2em; letter-spacing: 1px;">CALL: 0111-7227058</h2>
+                </div>
+                <div class="collapse navbar-collapse navbar-right">
+                    <img src="images/re_logo.jpg" alt="logo" height="80px"></a>
+                </div>
+            </div><!--/.container-->
+        </nav><!--/nav-->
+    
+    </header><!--/header-->
+
+   <section class="no-margin" style="margin-top: 40px;">
+    <div class="container-fluid">
+      
+        
+        <div class="row">
+            
+        </div>
+        <div class="row">
+            <div class="col-sm-12" style="margin-top:40px;">
+                <h2 class="page-header">Chatroom: <span style="text-transform: uppercase;color:red;"><%= channel %></span></h2>
+                <table class="table" id="table-disaster">
+                    <tr>
+                        
+                        <th width="10%">Call Date</th>
+                        <th width="10%"></th>
+                        <th width="10%">Caller ID</th>
+                        <!--<th>Call SID</th>-->
+                        <th>Caller Message</th>
+                        <th>Replies</th>
+                        <th></th>
+                        <th width="5%"></th>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>    
+   </section>
+
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Reply Message</h4>
+                </div>
+                <div class="modal-body">
+                    <form class="form" id="form-message">
+                        <input type="hidden" name="user_id" id="user_id" value="" /> 
+                        <input type="hidden" name="caller" id="caller" value="" />
+                        <div class="form-group">
+                            <label for="message">Message</label>
+                            <textarea class="form-control" name="message" id="message"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="send-message" class="btn btn-primary" data-dismiss="modal">Send</button>
+                </div>
+            </div> <!-- /.modal-content -->
+        </div> <!-- /.modal-dialog -->
+    </div>
+
+    <footer id="footer" class="midnight-blue">
+        <div class="container-fluid">
+            <div class="row">
+                <div class="col-sm-6">
+                    &copy; 2017 Dev Con. All Rights Reserved.
+                </div>
+                
+            </div>
+        </div>
+    </footer><!--/#footer-->
+
+    <script src="js/jquery.min.js"></script>
+    <script src="js/jquery-ui.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+    $(function(){
+
+        $('#myModal').on('show.bs.modal', function(e) {
+            $('#myModal #message').val('');
+            //get data-id attribute of the clicked element
+            var userId = $(e.relatedTarget).data('user-id');
+            var caller = $(e.relatedTarget).data('caller');
+
+            //populate the textbox
+            $(e.currentTarget).find('input[name="user_id"]').val(userId);
+            $(e.currentTarget).find('input[name="caller"]').val(caller);
+        });
+
+        $('#myModal #send-message').click(function(e){
+            if('#myModal #message'){
+                var formData = {
+                    user_id: $("#user_id").val(),
+                    message: $("#message").val(),
+                    caller: $("#caller").val()
+                  };
+
+                $.ajax({
+                    url: '/api/<%= channel%>/messages',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: JSON.stringify(formData),
+                    contentType: "application/json; charset=UTF-8",
+                    success: function(data) {
+                        $("#ul-"+$("#user_id").val()).prepend("<li>"+$("#message").val()+"</li>")
+                    }
+                });
+            }
+            
+        });
+        
+        var socket = io.connect('/<%= channel %>');
+
+        socket.on('connect', function () {
+            socket.on('message', function(data){
+               var transcript2 = '';
+                var resp = '';
+                if(data.transcript2 != undefined){
+                    transcript2 = data.transcript2;
+                    
+                }
+                if(data.resp != undefined){
+                    resp = data.resp;
+                }
+
+
+
+               $('#table-disaster > tbody > tr:first').after('<tr id="tag-' + data.id+ '" style="visibility:hidden;"><td id="'+data.id+'"_date">'+data.created_at+'</td><td><img width="120px" src="'+data.image+'" /></td><td id="'+data.id+'_caller">'+data.caller+'</td><td id="'+data.id+'_transcript1">'+data.message+'</td><td><ul id="ul-'+data.id+'" style="padding-left: 12px;"></ul></td><td><audio controls style="width:100px;"><source src="'+data.recording_url+'" type="audio/wav">Your browser does not support the audio element.</audio></td><td><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal" data-user-id="'+data.id+'" data-caller="'+data.caller+'">Reply</button></td></tr>');
+
+               
+                $("#tag-"+ data.id)
+                    .css("visibility","visible")
+                    .animate({"background-color": '#99ff99'}, 500)
+                    .animate({"background-color": '#ffffff'}, 500)
+                    ;
+                
+            });
+        });
+        
+
+         
+    $.ajax({
+        url: 'api/<%= channel %>/messages',
+        type: 'GET',
+        crossDomain: true,
+        dataType: 'json',
+        success: function(data) {
+            $.each(data,function(k, v){
+                console.log('caller: '+v.caller);
+                var transcript2 = '';
+                var resp = '';
+                if(v.transcript2 != undefined){
+                    transcript2 = v.transcript2;
+                    
+                }
+                if(v.resp != undefined){
+                    resp = v.resp;
+                }
+                var date = new Date(v.created_at);
+
+                      new_date = ('0'+date.getDate()).slice(-2)+"/"+('0'+(date.getMonth()+1)).slice(-2)+"/"+date.getFullYear()+" "+('0'+date.getHours()).slice(-2)+":"+('0'+date.getMinutes()).slice(-2)+":"+('0'+date.getSeconds()).slice(-2);
+
+                var ul = "<ul id='ul-"+v._id+"' style='padding-left: 12px;'>"
+                $.each(v.messages, function(l,m){
+                    ul+="<li>"+m.message+"</li>"
+                })
+                ul+="</ul>"
+
+                $('#table-disaster').append('<tr><td id="'+v._id+'"_date">'+new_date+'</td><td><img width="120px" src="'+v.image+'" /></td><td id="'+v._id+'_caller">'+v.caller+'</td><td id="'+v._id+'_transcript1">'+v.message+'</td><td>'+ul+'</td><td><audio controls style="width:100px;"><source src="'+v.recording_url+'" type="audio/wav">Your browser does not support the audio element.</audio></td><td><button type="button" class="btn btn-primary" data-toggle="modal" data-target="#myModal" data-user-id="'+v._id+'" data-caller="'+v.caller+'">Reply</button></td></tr>');
+            });
+        }
+    });
+
+    });          
+    </script>
+</body>
+</html>
